@@ -1,15 +1,21 @@
 const express        = require("express");
+const session        = require("express-session");
+const MongoStore     = require("connect-mongo")(session);
 const path           = require("path");
 const logger         = require("morgan");
 const cookieParser   = require("cookie-parser");
 const bodyParser     = require("body-parser");
 const mongoose       = require("mongoose");
+
 const app            = express();
 
 // Controllers
+// crashing without ./ before the route directory
+const userRoute = require('./routes/user-route');
+const authRoute = require('./routes/user-route');
 
 // Mongoose configuration
-mongoose.connect("mongodb://localhost/basic-auth");
+mongoose.connect("mongodb://localhost/basic-auth-1");
 
 // Middlewares configuration
 app.use(logger("dev"));
@@ -24,9 +30,20 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
 // Authentication
+// need this for the session to work
+app.use(session({
+  secret: "basic-auth-secret",
+  cookie: { maxAge: 600000 },
+  store: new MongoStore({
+    mongooseConnection: mongoose.connection,
+    ttl: 24 * 60 * 60 // 1 day
+  })
+}));
 app.use(cookieParser());
 
 // Routes
+app.use("/", userRoute);
+app.use("/", authRoute);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
